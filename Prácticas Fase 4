@@ -1,1 +1,19 @@
+import logging
+from typing import Optional
 
+class ErrorSistema(Exception):
+    def __init__(self, mensaje: str, codigo_error: Optional[str] = None):
+        self.mensaje = mensaje
+        self.codigo_error = codigo_error
+        super().__init__(self.mensaje)
+        logging.error(f"ErrorSistema: {mensaje} | Código: {codigo_error}")
+
+class DatosInvalidosError(ErrorSistema):
+    pass
+
+class ServicioNoDisponibleError(ErrorSistema):
+    pass
+
+class ReservaInvalidaError(ErrorSistema):
+    pass
+#Henry Páez Prado, creando primero excepciones.py
