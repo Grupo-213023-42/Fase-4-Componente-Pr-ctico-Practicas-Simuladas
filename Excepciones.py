@@ -16,4 +16,3 @@ class ServicioNoDisponibleError(ErrorSistema):
 
 class ReservaInvalidaError(ErrorSistema):
     pass
-#Henry Páez Prado, creando primero excepciones.py
