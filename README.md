@@ -17,8 +17,10 @@ Tarea 4 de Programación
 - Archivo de logs (logs_eventos.log)
 - ## Integrantes del grupo
 - Henry Páez Prado
-- Rosa Valeria
-- Diego Torres
+- Rosa Valeria Campo Vaca
+- Diego Andres Torres Arias
+- Jeanpooll López Cuevas
+- Jose Aurelio Morales Padilla
 - ## Cómo ejecutar
 ```bash
 python sistema_fj.py
