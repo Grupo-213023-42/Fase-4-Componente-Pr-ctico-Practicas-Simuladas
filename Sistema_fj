@@ -1,6 +1,9 @@
 import logging
+import re
 from typing import Optional
+from abc import ABC, abstractmethod
 
+# ====================== EXCEPCIONES ======================
 class ErrorSistema(Exception):
     def __init__(self, mensaje: str, codigo_error: Optional[str] = None):
         self.mensaje = mensaje
@@ -8,28 +11,31 @@ class ErrorSistema(Exception):
         super().__init__(self.mensaje)
         logging.error(f"ErrorSistema: {mensaje} | Código: {codigo_error}")
 
+
 class DatosInvalidosError(ErrorSistema):
     pass
+
 
 class ServicioNoDisponibleError(ErrorSistema):
     pass
 
+
 class ReservaInvalidaError(ErrorSistema):
     pass
-import re
-import logging
-from excepciones import DatosInvalidosError
-from abc import ABC, abstractmethod
 
+
+# ====================== ENTIDADES ======================
 class Entidad(ABC):
     @abstractmethod
     def __str__(self):
         pass
+
+
 class Cliente(Entidad):
     def __init__(self, nombre: str, email: str, telefono: str):
         self._nombre = nombre
-        self.email = email
-        self.telefono = telefono
+        self.email = email          # usa el setter
+        self.telefono = telefono    # usa el setter
         logging.info(f"Cliente registrado: {self}")
 
     @property
@@ -58,9 +64,9 @@ class Cliente(Entidad):
 
     def __str__(self):
         return f"Cliente: {self.nombre} | Email: {self.email} | Tel: {self.telefono}"
-from abc import ABC, abstractmethod
-from excepciones import DatosInvalidosError
 
+
+# ====================== SERVICIOS ======================
 class Servicio(ABC):
     def __init__(self, nombre: str, descripcion_base: str):
         self.nombre = nombre
@@ -81,6 +87,7 @@ class Servicio(ABC):
     def __str__(self):
         return self.nombre
 
+
 class ReservaSala(Servicio):
     def __init__(self):
         super().__init__("Reserva de Sala", "Sala de reuniones equipada con proyector y wifi")
@@ -96,6 +103,7 @@ class ReservaSala(Servicio):
 
     def validar_parametros(self, duracion: float) -> bool:
         return 0.5 <= duracion <= 24
+
 
 class AlquilerEquipo(Servicio):
     def __init__(self):
@@ -114,6 +122,7 @@ class AlquilerEquipo(Servicio):
     def validar_parametros(self, duracion: float) -> bool:
         return duracion >= 4
 
+
 class AsesoriaEspecializada(Servicio):
     def __init__(self):
         super().__init__("Asesoría Especializada", "Consultoría técnica personalizada")
@@ -126,49 +135,12 @@ class AsesoriaEspecializada(Servicio):
 
     def describir(self) -> str:
         return f"{self.descripcion_base} - Tarifa por hora + cargo fijo"
-import logging
-from cliente import Cliente
-from servicio import Servicio
-from excepciones import ReservaInvalidaError
-
-class Reserva:
-    def __init__(self, cliente: Cliente, servicio: Servicio, duracion: float):
-        self.cliente = cliente
-        self.servicio = servicio
-        self.duracion = duracion
-        self.estado = "pendiente"
-        self.costo = 0.0
-        logging.info(f"Reserva creada (pendiente): {cliente.nombre} - {servicio.nombre}")
-
-    def confirmar(self):
-        try:
-            if self.estado != "pendiente":
-                raise ReservaInvalidaError("La reserva ya fue procesada", "RES_003")
-            self.servicio.validar_parametros(self.duracion)
-            self.costo = self.servicio.calcular_costo(self.duracion)
-            self.estado = "confirmada"
-            logging.info(f"Reserva CONFIRMADA - Costo: ${self.costo}")
-        except Exception as e:
-            logging.error(f"Error al confirmar reserva: {e}")
-            raise
-
-    def cancelar(self):
-        if self.estado == "confirmada":
-            self.estado = "cancelada"
-            logging.info("Reserva CANCELADA")
-        else:
-            raise ReservaInvalidaError("Solo se pueden cancelar reservas confirmadas", "RES_004")
-
-    def __str__(self):
-        return f"Reserva {self.estado.upper()} | Cliente: {self.cliente.nombre} | Servicio: {self.servicio} | Duración: {self.duracion}h | Costo: ${self.costo}"
 
     def validar_parametros(self, duracion: float) -> bool:
-        return 0.5 <= duracion <= 8
-import logging
-from cliente import Cliente
-from servicio import Servicio
-from excepciones import ReservaInvalidaError
+        return duracion > 0
 
+
+# ====================== RESERVA ======================
 class Reserva:
     def __init__(self, cliente: Cliente, servicio: Servicio, duracion: float):
         self.cliente = cliente
@@ -182,7 +154,10 @@ class Reserva:
         try:
             if self.estado != "pendiente":
                 raise ReservaInvalidaError("La reserva ya fue procesada", "RES_003")
-            self.servicio.validar_parametros(self.duracion)
+            
+            if not self.servicio.validar_parametros(self.duracion):
+                raise ReservaInvalidaError("Parámetros de duración inválidos para el servicio", "RES_002")
+            
             self.costo = self.servicio.calcular_costo(self.duracion)
             self.estado = "confirmada"
             logging.info(f"Reserva CONFIRMADA - Costo: ${self.costo}")
@@ -198,19 +173,19 @@ class Reserva:
             raise ReservaInvalidaError("Solo se pueden cancelar reservas confirmadas", "RES_004")
 
     def __str__(self):
-        return f"Reserva {self.estado.upper()} | Cliente: {self.cliente.nombre} | Servicio: {self.servicio} | Duración: {self.duracion}h | Costo: ${self.costo}"
-import logging
-from cliente import Cliente
-from servicio import ReservaSala, AlquilerEquipo, AsesoriaEspecializada
-from reserva import Reserva
-from excepciones import DatosInvalidosError, ServicioNoDisponibleError, ReservaInvalidaError
+        return (f"Reserva {self.estado.upper()} | Cliente: {self.cliente.nombre} | "
+                f"Servicio: {self.servicio} | Duración: {self.duracion}h | Costo: ${self.costo}")
 
+
+# ====================== SIMULACIÓN ======================
 logging.basicConfig(
     filename='eventos.log',
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
-    encoding='utf-8'
+    encoding='utf-8',
+    force=True
 )
+
 
 def simular_operaciones():
     print("🚀 Iniciando Sistema Integral Software FJ - Estructura Modular\n")
@@ -243,7 +218,7 @@ def simular_operaciones():
     asesoria = AsesoriaEspecializada()
     print("✅ Servicios creados:", [s.nombre for s in [sala, equipo, asesoria]])
 
-    # 5. Reserva exitosa
+    # 5. Reserva exitosa - Sala
     try:
         r1 = Reserva(c1, sala, 3.0)
         r1.confirmar()
@@ -257,16 +232,16 @@ def simular_operaciones():
         r2 = Reserva(c1, sala, 30.0)
         r2.confirmar()
     except Exception as e:
-        print("✅ Excepción controlada (duración):", e)
+        print("✅ Excepción controlada (duración):", type(e).__name__, "-", e)
 
-    # 7. Cálculo sobrecargado (impuesto y descuento)
+    # 7. Cálculo personalizado (impuesto y descuento)
     try:
         costo = asesoria.calcular_costo(2.0, impuesto=0.10, descuento=0.15)
         print(f"✅ Costo personalizado: ${costo}")
     except Exception as e:
         print("❌", e)
 
-    # 8. Cancelación
+    # 8. Cancelación de reserva
     try:
         r1.cancelar()
         print("✅ Reserva cancelada")
@@ -279,7 +254,7 @@ def simular_operaciones():
     except ServicioNoDisponibleError as e:
         print("✅ Excepción controlada (servicio):", e)
 
-    # 10. Try/Except/Else/Finally + encadenamiento de excepciones
+    # 10. Excepción encadenada + Finally
     try:
         1 / 0
     except ZeroDivisionError as e:
@@ -291,9 +266,22 @@ def simular_operaciones():
     finally:
         print("✅ Finally: sistema sigue estable")
 
-    print("\n📊 RESUMEN: Sistema estable con manejo de excepciones")
-    print(f"Clientes: {len(clientes)} | Reservas: {len(reservas)}")
-    print("📁 Revisa eventos.log")
+    # 11. Reserva de equipo (nueva simulación)
+    try:
+        r3 = Reserva(c1, equipo, 48.0)   # 2 días
+        r3.confirmar()
+        reservas.append(r3)
+        print("✅ Reserva de equipo exitosa:", r3)
+    except Exception as e:
+        print("❌", e)
+
+    print("\n" + "="*60)
+    print("📊 RESUMEN FINAL")
+    print(f"Clientes registrados : {len(clientes)}")
+    print(f"Reservas confirmadas : {len(reservas)}")
+    print("📁 Log generado en: eventos.log")
+    print("="*60)
+
 
 if __name__ == "__main__":
     simular_operaciones()
